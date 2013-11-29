@@ -5,8 +5,10 @@ import static org.junit.Assert.*;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
+import javax.ws.rs.client.ClientBuilder;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -15,8 +17,6 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import com.sun.jersey.api.client.Client;
 
 @RunWith(Arquillian.class)
 public class CalcTest {
@@ -34,11 +34,12 @@ public class CalcTest {
     @RunAsClient
     public void add_2_3_is_5() throws Exception {
         String response =
-            Client
-                .create()
-                .resource("http://localhost:8181/calc-test/rest/calc/add")
+            ClientBuilder
+                .newClient()
+                .target("http://localhost:8181/calc-test/rest/calc/add")
                 .queryParam("x", "2")
                 .queryParam("y", "3")
+                .request()
                 .get(String.class);
         assertThat(response, is("2 + 3 = 5"));
     }
@@ -46,9 +47,11 @@ public class CalcTest {
     @Deployment
     public static WebArchive createDeployment() {
         Path webinf = Paths.get("src", "main", "webapp", "WEB-INF");
-        return ShrinkWrap
+        WebArchive war = ShrinkWrap
             .create(WebArchive.class, "calc-test.war")
             .addClasses(Calc.class, CalcBean.class, CalcApplication.class)
             .addAsWebInfResource(webinf.resolve("beans.xml").toFile());
+        Logger.getGlobal().info(war.toString(true));
+        return war;
     }
 }
